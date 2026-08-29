@@ -324,9 +324,15 @@ public class MainActivity extends Activity {
     private JSONObject currentUserJson() throws Exception {
         String email = authPreferences.getString("email", "");
         if (email.isEmpty()) return null;
+        String displayName = authPreferences.getString("display_name", "").trim();
+        if (displayName.isEmpty() || displayName.indexOf('\uFFFD') >= 0) {
+            int at = email.indexOf('@');
+            displayName = at > 0 ? email.substring(0, at) : "Авантюрист";
+            authPreferences.edit().putString("display_name", displayName).apply();
+        }
         return new JSONObject()
                 .put("email", email)
-                .put("displayName", authPreferences.getString("display_name", "Авантюрист"))
+                .put("displayName", displayName)
                 .put("localId", authPreferences.getString("local_id", ""));
     }
 
@@ -432,6 +438,21 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public void resetPassword(String email) {
             sendPasswordReset(email);
+        }
+
+        @JavascriptInterface
+        public void setDisplayName(String displayName) {
+            String cleanName = displayName == null ? "" : displayName.trim();
+            if (cleanName.isEmpty() || cleanName.length() > 60 || cleanName.indexOf('\uFFFD') >= 0) {
+                sendAuthResult(false, "profile", "Введите корректное имя.", null);
+                return;
+            }
+            authPreferences.edit().putString("display_name", cleanName).apply();
+            try {
+                sendAuthResult(true, "profile", "Имя сохранено.", currentUserJson());
+            } catch (Exception error) {
+                sendAuthResult(false, "profile", "Не удалось сохранить имя.", null);
+            }
         }
 
         @JavascriptInterface
