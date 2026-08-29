@@ -59,7 +59,8 @@ jobs:
       - name: Validate version
         shell: bash
         run: |
-          source version.properties
+          VERSION_CODE="$(sed -n 's/^VERSION_CODE=//p' version.properties | tr -d '\r')"
+          VERSION_NAME="$(sed -n 's/^VERSION_NAME=//p' version.properties | tr -d '\r')"
           test "$VERSION_CODE" -ge 1
           if [[ "$GITHUB_REF_TYPE" == "tag" && "$GITHUB_REF_NAME" != "v$VERSION_NAME" ]]; then
             echo "Tag must be v$VERSION_NAME"
@@ -78,7 +79,8 @@ jobs:
         shell: bash
         run: |
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose app/build/outputs/apk/release/app-release.apk
-          source version.properties
+          VERSION_CODE="$(sed -n 's/^VERSION_CODE=//p' version.properties | tr -d '\r')"
+          VERSION_NAME="$(sed -n 's/^VERSION_NAME=//p' version.properties | tr -d '\r')"
           mkdir -p dist
           cp app/build/outputs/apk/release/app-release.apk dist/SARE-Guild.apk
           RELEASE_TAG="${GITHUB_REF_NAME}"
