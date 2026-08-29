@@ -24,12 +24,14 @@ import android.webkit.WebViewClient;
 import android.widget.Toast;
 
 import org.json.JSONObject;
+import org.json.JSONTokener;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.URLEncoder;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
@@ -110,7 +112,7 @@ public class MainActivity extends Activity {
                 } catch (Exception error) {
                     fileChooserCallback = null;
                     Toast.makeText(MainActivity.this,
-                            "Не удалось открыть выбор файла", Toast.LENGTH_SHORT).show();
+                            "�� 㤠���� ������ �롮� 䠩��", Toast.LENGTH_SHORT).show();
                     return false;
                 }
             }
@@ -158,19 +160,23 @@ public class MainActivity extends Activity {
 
     private void checkForUpdates() {
         runOnUiThread(() -> Toast.makeText(this,
-                "Проверяем обновления…", Toast.LENGTH_SHORT).show());
+                "�஢��塞 ����������:", Toast.LENGTH_SHORT).show());
         executor.execute(() -> {
             HttpURLConnection connection = null;
             try {
-                connection = (HttpURLConnection) new URL(UPDATE_URL).openConnection();
+                String uncachedUpdateUrl = UPDATE_URL + "?t=" + System.currentTimeMillis();
+                connection = (HttpURLConnection) new URL(uncachedUpdateUrl).openConnection();
                 connection.setConnectTimeout(15000);
                 connection.setReadTimeout(15000);
                 connection.setInstanceFollowRedirects(true);
+                connection.setUseCaches(false);
                 connection.setRequestProperty("Accept", "application/json");
+                connection.setRequestProperty("Cache-Control", "no-cache, no-store, max-age=0");
+                connection.setRequestProperty("Pragma", "no-cache");
 
                 int status = connection.getResponseCode();
                 if (status < 200 || status >= 300) {
-                    throw new IllegalStateException("Сервер обновлений ответил кодом " + status);
+                    throw new IllegalStateException("��ࢥ� ���������� �⢥⨫ ����� " + status);
                 }
 
                 JSONObject payload = new JSONObject(readFully(connection.getInputStream()));
@@ -179,21 +185,21 @@ public class MainActivity extends Activity {
                 String apkUrl = payload.getString("apkUrl");
 
                 if (remoteVersionCode <= BuildConfig.VERSION_CODE) {
-                    runOnUiThread(() -> showMessage("Обновления",
-                            "Установлена актуальная версия " + BuildConfig.VERSION_NAME + "."));
+                    runOnUiThread(() -> showMessage("����������",
+                            "��⠭������ ���㠫쭠� ����� " + BuildConfig.VERSION_NAME + "."));
                     return;
                 }
 
                 runOnUiThread(() -> new AlertDialog.Builder(this)
-                        .setTitle("Доступна версия " + remoteVersionName)
-                        .setMessage("Скачать обновление? Android отдельно попросит подтвердить установку.")
-                        .setNegativeButton("Позже", null)
-                        .setPositiveButton("Скачать", (dialog, which) ->
+                        .setTitle("����㯭� ����� " + remoteVersionName)
+                        .setMessage("������ ����������? Android �⤥�쭮 ������ ���⢥न�� ��⠭����.")
+                        .setNegativeButton("�����", null)
+                        .setPositiveButton("������", (dialog, which) ->
                                 downloadApk(apkUrl, remoteVersionName))
                         .show());
             } catch (Exception error) {
-                runOnUiThread(() -> showMessage("Не удалось проверить обновления",
-                        error.getMessage() == null ? "Проверьте интернет-соединение." : error.getMessage()));
+                runOnUiThread(() -> showMessage("�� 㤠���� �஢���� ����������",
+                        error.getMessage() == null ? "�஢���� ���୥�-ᮥ�������." : error.getMessage()));
             } finally {
                 if (connection != null) {
                     connection.disconnect();
@@ -216,7 +222,7 @@ public class MainActivity extends Activity {
 
     private void authenticate(String action, String email, String password, String displayName) {
         if (BuildConfig.FIREBASE_API_KEY.isEmpty()) {
-            sendAuthResult(false, action, "Авторизация Firebase ещё не настроена для этой сборки.", null);
+            sendAuthResult(false, action, "���ਧ��� Firebase ��� �� ����஥�� ��� �⮩ ᡮન.", null);
             return;
         }
         executor.execute(() -> {
@@ -250,7 +256,7 @@ public class MainActivity extends Activity {
 
                 String resolvedName = displayName == null ? "" : displayName.trim();
                 if (resolvedName.isEmpty()) {
-                    resolvedName = authPreferences.getString("display_name", "Авантюрист");
+                    resolvedName = authPreferences.getString("display_name", "���������");
                 }
                 authPreferences.edit()
                         .putString("email", response.optString("email", email.trim()))
@@ -262,7 +268,7 @@ public class MainActivity extends Activity {
                 sendAuthResult(true, action, "", currentUserJson());
             } catch (Exception error) {
                 sendAuthResult(false, action,
-                        error.getMessage() == null ? "Не удалось связаться с Firebase." : error.getMessage(), null);
+                        error.getMessage() == null ? "�� 㤠���� �易���� � Firebase." : error.getMessage(), null);
             } finally {
                 if (connection != null) connection.disconnect();
             }
@@ -271,7 +277,7 @@ public class MainActivity extends Activity {
 
     private void sendPasswordReset(String email) {
         if (BuildConfig.FIREBASE_API_KEY.isEmpty()) {
-            sendAuthResult(false, "reset", "Авторизация Firebase ещё не настроена для этой сборки.", null);
+            sendAuthResult(false, "reset", "���ਧ��� Firebase ��� �� ����஥�� ��� �⮩ ᡮન.", null);
             return;
         }
         executor.execute(() -> {
@@ -297,10 +303,10 @@ public class MainActivity extends Activity {
                 if (status < 200 || status >= 300) {
                     throw new IllegalStateException(firebaseErrorMessage(response));
                 }
-                sendAuthResult(true, "reset", "Письмо для восстановления отправлено.", null);
+                sendAuthResult(true, "reset", "���쬮 ��� ����⠭������� ��ࠢ����.", null);
             } catch (Exception error) {
                 sendAuthResult(false, "reset",
-                        error.getMessage() == null ? "Не удалось отправить письмо." : error.getMessage(), null);
+                        error.getMessage() == null ? "�� 㤠���� ��ࠢ��� ���쬮." : error.getMessage(), null);
             } finally {
                 if (connection != null) connection.disconnect();
             }
@@ -310,15 +316,15 @@ public class MainActivity extends Activity {
     private String firebaseErrorMessage(JSONObject response) {
         String code = response.optJSONObject("error") == null ? "" :
                 response.optJSONObject("error").optString("message");
-        if (code.startsWith("EMAIL_EXISTS")) return "Этот email уже зарегистрирован.";
+        if (code.startsWith("EMAIL_EXISTS")) return "��� email 㦥 ��ॣ����஢��.";
         if (code.startsWith("INVALID_LOGIN_CREDENTIALS") || code.startsWith("INVALID_PASSWORD"))
-            return "Неверный email или пароль.";
-        if (code.startsWith("EMAIL_NOT_FOUND")) return "Пользователь с таким email не найден.";
-        if (code.startsWith("WEAK_PASSWORD")) return "Пароль должен содержать не менее 6 символов.";
-        if (code.startsWith("INVALID_EMAIL")) return "Введите корректный email.";
-        if (code.startsWith("TOO_MANY_ATTEMPTS")) return "Слишком много попыток. Попробуйте позже.";
-        if (code.startsWith("OPERATION_NOT_ALLOWED")) return "Вход по email ещё не включён в Firebase.";
-        return code.isEmpty() ? "Ошибка Firebase." : code;
+            return "������ email ��� ��஫�.";
+        if (code.startsWith("EMAIL_NOT_FOUND")) return "���짮��⥫� � ⠪�� email �� ������.";
+        if (code.startsWith("WEAK_PASSWORD")) return "��஫� ������ ᮤ�ঠ�� �� ����� 6 ᨬ�����.";
+        if (code.startsWith("INVALID_EMAIL")) return "������ ���४�� email.";
+        if (code.startsWith("TOO_MANY_ATTEMPTS")) return "���誮� ����� ����⮪. ���஡�� �����.";
+        if (code.startsWith("OPERATION_NOT_ALLOWED")) return "�室 �� email ��� �� ������ � Firebase.";
+        return code.isEmpty() ? "�訡�� Firebase." : code;
     }
 
     private JSONObject currentUserJson() throws Exception {
@@ -327,13 +333,141 @@ public class MainActivity extends Activity {
         String displayName = authPreferences.getString("display_name", "").trim();
         if (displayName.isEmpty() || displayName.indexOf('\uFFFD') >= 0) {
             int at = email.indexOf('@');
-            displayName = at > 0 ? email.substring(0, at) : "Авантюрист";
+            displayName = at > 0 ? email.substring(0, at) : "���������";
             authPreferences.edit().putString("display_name", displayName).apply();
         }
         return new JSONObject()
                 .put("email", email)
                 .put("displayName", displayName)
                 .put("localId", authPreferences.getString("local_id", ""));
+    }
+
+    private String encodeDatabasePath(String path) throws Exception {
+        String clean = path == null ? "" : path.trim();
+        if (clean.startsWith("/")) clean = clean.substring(1);
+        if (clean.endsWith("/")) clean = clean.substring(0, clean.length() - 1);
+        if (clean.isEmpty()) return "";
+        StringBuilder encoded = new StringBuilder();
+        for (String segment : clean.split("/")) {
+            if (!segment.matches("[A-Za-z0-9_-]{1,180}")) {
+                throw new IllegalArgumentException("�������⨬� ���� ���� ������.");
+            }
+            if (encoded.length() > 0) encoded.append('/');
+            encoded.append(URLEncoder.encode(segment, StandardCharsets.UTF_8.name()).replace("+", "%20"));
+        }
+        return encoded.toString();
+    }
+
+    private JSONObject performCloudRequest(String method, String path, String jsonBody, String idToken)
+            throws Exception {
+        String encodedPath = encodeDatabasePath(path);
+        String endpoint = BuildConfig.FIREBASE_DATABASE_URL + "/" + encodedPath + ".json?auth="
+                + URLEncoder.encode(idToken, StandardCharsets.UTF_8.name());
+        HttpURLConnection connection = (HttpURLConnection) new URL(endpoint).openConnection();
+        try {
+            connection.setRequestMethod(method);
+            connection.setConnectTimeout(15000);
+            connection.setReadTimeout(15000);
+            connection.setUseCaches(false);
+            connection.setRequestProperty("Accept", "application/json");
+            connection.setRequestProperty("Cache-Control", "no-cache");
+            if (!"GET".equals(method) && !"DELETE".equals(method)) {
+                connection.setDoOutput(true);
+                connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+                try (OutputStream output = connection.getOutputStream()) {
+                    output.write((jsonBody == null || jsonBody.isEmpty() ? "null" : jsonBody)
+                            .getBytes(StandardCharsets.UTF_8));
+                }
+            }
+            int status = connection.getResponseCode();
+            InputStream stream = status >= 200 && status < 300
+                    ? connection.getInputStream() : connection.getErrorStream();
+            String body = stream == null ? "null" : readFully(stream);
+            return new JSONObject().put("status", status).put("body", body.isEmpty() ? "null" : body);
+        } finally {
+            connection.disconnect();
+        }
+    }
+
+    private boolean refreshIdToken() {
+        HttpURLConnection connection = null;
+        try {
+            String refreshToken = authPreferences.getString("refresh_token", "");
+            if (refreshToken.isEmpty()) return false;
+            URL url = new URL("https://securetoken.googleapis.com/v1/token?key="
+                    + BuildConfig.FIREBASE_API_KEY);
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setConnectTimeout(15000);
+            connection.setReadTimeout(15000);
+            connection.setDoOutput(true);
+            connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+            String body = "grant_type=refresh_token&refresh_token="
+                    + URLEncoder.encode(refreshToken, StandardCharsets.UTF_8.name());
+            try (OutputStream output = connection.getOutputStream()) {
+                output.write(body.getBytes(StandardCharsets.UTF_8));
+            }
+            if (connection.getResponseCode() < 200 || connection.getResponseCode() >= 300) return false;
+            JSONObject response = new JSONObject(readFully(connection.getInputStream()));
+            authPreferences.edit()
+                    .putString("id_token", response.optString("id_token"))
+                    .putString("refresh_token", response.optString("refresh_token", refreshToken))
+                    .apply();
+            return !response.optString("id_token").isEmpty();
+        } catch (Exception ignored) {
+            return false;
+        } finally {
+            if (connection != null) connection.disconnect();
+        }
+    }
+
+    private void cloudRequest(String requestId, String method, String path, String jsonBody) {
+        executor.execute(() -> {
+            try {
+                String normalizedMethod = method == null ? "" : method.toUpperCase();
+                if (!(normalizedMethod.equals("GET") || normalizedMethod.equals("PUT")
+                        || normalizedMethod.equals("PATCH") || normalizedMethod.equals("POST")
+                        || normalizedMethod.equals("DELETE"))) {
+                    throw new IllegalArgumentException("�������⨬�� ������ ���� ������.");
+                }
+                String token = authPreferences.getString("id_token", "");
+                if (token.isEmpty()) throw new IllegalStateException("������ � ������ ����୮.");
+                JSONObject result = performCloudRequest(normalizedMethod, path, jsonBody, token);
+                if (result.getInt("status") == 401 && refreshIdToken()) {
+                    token = authPreferences.getString("id_token", "");
+                    result = performCloudRequest(normalizedMethod, path, jsonBody, token);
+                }
+                int status = result.getInt("status");
+                if (status < 200 || status >= 300) {
+                    throw new IllegalStateException(status == 401 || status == 403
+                            ? "�������筮 �ࠢ ��� �⮩ ����樨."
+                            : "Firebase �⢥⨫ ����� " + status + ".");
+                }
+                sendCloudResult(requestId, true, result.getString("body"), "");
+            } catch (Exception error) {
+                sendCloudResult(requestId, false, "null",
+                        error.getMessage() == null ? "�� 㤠���� �易���� � ��饩 �����." : error.getMessage());
+            }
+        });
+    }
+
+    private void sendCloudResult(String requestId, boolean ok, String rawData, String message) {
+        try {
+            JSONObject payload = new JSONObject().put("requestId", requestId).put("ok", ok)
+                    .put("message", message == null ? "" : message);
+            payload.put("data", ok ? new JSONTokener(rawData == null ? "null" : rawData).nextValue()
+                    : JSONObject.NULL);
+            String script = "window.SareCloud&&window.SareCloud.receive(" + payload + ")";
+            runOnUiThread(() -> webView.evaluateJavascript(script, null));
+        } catch (Exception error) {
+            try {
+                JSONObject fallback = new JSONObject().put("requestId", requestId).put("ok", false)
+                        .put("message", "�����४�� �⢥� ��饩 ����.");
+                runOnUiThread(() -> webView.evaluateJavascript(
+                        "window.SareCloud&&window.SareCloud.receive(" + fallback + ")", null));
+            } catch (Exception ignored) {
+            }
+        }
     }
 
     private void sendAuthResult(boolean ok, String action, String message, JSONObject user) {
@@ -350,14 +484,14 @@ public class MainActivity extends Activity {
         Uri uri = Uri.parse(apkUrl);
         if (!"https".equalsIgnoreCase(uri.getScheme()) ||
                 !"github.com".equalsIgnoreCase(uri.getHost())) {
-            showMessage("Ошибка обновления", "Получен недопустимый адрес APK.");
+            showMessage("�訡�� ����������", "����祭 �������⨬� ���� APK.");
             return;
         }
 
         String fileName = "SARE-Guild-" + versionName.replaceAll("[^0-9A-Za-z._-]", "_") + ".apk";
         DownloadManager.Request request = new DownloadManager.Request(uri)
-                .setTitle("Гильдия SARE " + versionName)
-                .setDescription("Загрузка обновления")
+                .setTitle("���줨� SARE " + versionName)
+                .setDescription("����㧪� ����������")
                 .setMimeType("application/vnd.android.package-archive")
                 .setNotificationVisibility(
                         DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
@@ -365,7 +499,7 @@ public class MainActivity extends Activity {
 
         long downloadId = downloadManager.enqueue(request);
         preferences.edit().putLong(PENDING_DOWNLOAD_ID, downloadId).apply();
-        Toast.makeText(this, "Обновление загружается", Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "���������� ����㦠����", Toast.LENGTH_LONG).show();
     }
 
     private boolean canInstallPackages() {
@@ -380,8 +514,8 @@ public class MainActivity extends Activity {
         }
 
         if (!canInstallPackages()) {
-            showMessage("Разрешите установку обновлений",
-                    "Включите «Установка неизвестных приложений» для SARE и вернитесь в приложение.");
+            showMessage("������ ��⠭���� ����������",
+                    "������ <��⠭���� ���������� �ਫ������> ��� SARE � ��୨��� � �ਫ������.");
             Intent settingsIntent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
                     Uri.parse("package:" + getPackageName()));
             startActivity(settingsIntent);
@@ -444,15 +578,20 @@ public class MainActivity extends Activity {
         public void setDisplayName(String displayName) {
             String cleanName = displayName == null ? "" : displayName.trim();
             if (cleanName.isEmpty() || cleanName.length() > 60 || cleanName.indexOf('\uFFFD') >= 0) {
-                sendAuthResult(false, "profile", "Введите корректное имя.", null);
+                sendAuthResult(false, "profile", "������ ���४⭮� ���.", null);
                 return;
             }
             authPreferences.edit().putString("display_name", cleanName).apply();
             try {
-                sendAuthResult(true, "profile", "Имя сохранено.", currentUserJson());
+                sendAuthResult(true, "profile", "��� ��࠭���.", currentUserJson());
             } catch (Exception error) {
-                sendAuthResult(false, "profile", "Не удалось сохранить имя.", null);
+                sendAuthResult(false, "profile", "�� 㤠���� ��࠭��� ���.", null);
             }
+        }
+
+        @JavascriptInterface
+        public void cloudRequest(String requestId, String method, String path, String jsonBody) {
+            MainActivity.this.cloudRequest(requestId, method, path, jsonBody);
         }
 
         @JavascriptInterface
@@ -462,3 +601,4 @@ public class MainActivity extends Activity {
         }
     }
 }
+

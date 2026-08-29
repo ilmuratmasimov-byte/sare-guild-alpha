@@ -11,6 +11,7 @@ def keyAliasValue = System.getenv('SARE_KEY_ALIAS')
 def keyPasswordValue = System.getenv('SARE_KEY_PASSWORD')
 def hasReleaseSigning = keystorePath && keystorePassword && keyAliasValue && keyPasswordValue
 def firebaseApiKey = System.getenv('SARE_FIREBASE_API_KEY') ?: ''
+def firebaseDatabaseUrl = 'https://sare-guild-alpha-kz-default-rtdb.europe-west1.firebasedatabase.app'
 
 android {
     namespace 'kz.sare.guild'
@@ -23,6 +24,7 @@ android {
         versionCode versionProps['VERSION_CODE'].toInteger()
         versionName versionProps['VERSION_NAME']
         buildConfigField 'String', 'FIREBASE_API_KEY', '"' + firebaseApiKey.replace('\\', '\\\\').replace('"', '\\"') + '"'
+        buildConfigField 'String', 'FIREBASE_DATABASE_URL', '"' + firebaseDatabaseUrl + '"'
     }
 
     buildFeatures {
