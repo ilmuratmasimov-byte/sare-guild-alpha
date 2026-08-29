@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#173e33">
+  <title>Гильдия SARE</title>
+  <style>
+    :root{--ink:#173e33;--green:#2f6b55;--mint:#e9f2ee;--gold:#c58b2a;--paper:#f7f8f6;--line:#dfe6e2;--muted:#6a766f;--white:#fff;--danger:#b04444}
+    *{box-sizing:border-box} body{margin:0;background:var(--paper);color:#17211d;font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+    button,input,select,textarea{font:inherit} button{cursor:pointer}.app{min-height:100vh;padding-bottom:82px}
+    header{position:sticky;top:0;z-index:5;background:var(--ink);color:#fff;padding:16px 18px 14px;box-shadow:0 2px 10px #0002}
+    header h1{font-size:20px;margin:0} header p{font-size:12px;margin:3px 0 0;color:#d6e5df}
+    main{padding:16px;max-width:760px;margin:auto}.screen{display:none}.screen.active{display:block}
+    h2{font-size:22px;margin:0 0 14px}.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:15px;margin-bottom:12px;box-shadow:0 3px 14px #173e3309}
+    .filters{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px}.filters .wide{grid-column:1/-1}
+    input,select,textarea{width:100%;border:1px solid #cdd7d2;border-radius:11px;background:#fff;padding:11px 12px;color:#17211d;outline:none}
+    input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px #2f6b5518}textarea{min-height:104px;resize:vertical}
+    label{display:block;font-size:13px;font-weight:650;margin:0 0 6px}.field{margin-bottom:13px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .btn{border:0;border-radius:11px;padding:11px 14px;font-weight:700}.btn.primary{background:var(--green);color:#fff}.btn.secondary{background:var(--mint);color:var(--ink)}.btn.ghost{background:#fff;border:1px solid var(--line);color:var(--ink)}
+    .btn:disabled{opacity:.55;cursor:default}.full{width:100%}.row{display:flex;gap:9px;align-items:center}.between{justify-content:space-between}.muted{color:var(--muted)}
+    .tabs{display:flex;gap:8px;margin-bottom:14px;overflow:auto}.tab{white-space:nowrap;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:8px 13px}.tab.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+    .quest h3{margin:0;font-size:17px}.quest .meta{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0}.pill{background:var(--mint);color:var(--ink);border-radius:999px;padding:4px 9px;font-size:12px}.reward{font-size:17px;font-weight:800;color:var(--green)}
+    .empty{text-align:center;color:var(--muted);padding:28px 12px}.notice{background:#fff7e8;border:1px solid #f0d7a6;border-radius:12px;padding:11px 12px;margin-bottom:12px;color:#67491c}
+    .chat-tabs{display:flex;gap:8px;overflow:auto;margin-bottom:10px}.chat-log{height:47vh;min-height:260px;overflow:auto;background:#eef3f0;border-radius:14px;padding:12px;margin-bottom:10px}
+    .msg{max-width:84%;background:#fff;border-radius:13px 13px 13px 4px;padding:9px 11px;margin:7px 0;box-shadow:0 1px 5px #0001}.msg.me{margin-left:auto;background:#dcebe4;border-radius:13px 13px 4px 13px}.msg small{display:block;color:var(--muted);margin-top:3px}
+    .avatar{width:66px;height:66px;border-radius:50%;display:grid;place-items:center;background:var(--mint);color:var(--ink);font-size:26px;font-weight:800}.stat{flex:1;text-align:center;background:var(--paper);border-radius:12px;padding:10px}.stat strong{display:block;font-size:20px;color:var(--ink)}
+    nav.bottom{position:fixed;z-index:6;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding:7px 5px max(7px,env(safe-area-inset-bottom))}
+    nav.bottom button{border:0;background:transparent;color:var(--muted);padding:7px 2px;font-size:11px;font-weight:650}nav.bottom button span{display:block;font-size:21px;line-height:1.1;margin-bottom:3px}nav.bottom button.active{color:var(--green)}
+    .language-gate{position:fixed;inset:0;z-index:20;background:linear-gradient(160deg,#173e33,#2f6b55);display:grid;place-items:center;padding:24px}.language-gate.hidden{display:none}
+    .language-panel{width:min(100%,420px);background:#fff;border-radius:22px;padding:24px;text-align:center}.language-panel .crest{width:68px;height:68px;margin:0 auto 13px;border-radius:18px;display:grid;place-items:center;background:var(--mint);color:var(--ink);font-size:30px;font-weight:900}.language-panel h2{margin-bottom:5px}.language-panel p{color:var(--muted);margin:0 0 18px}.language-panel button{width:100%;margin-top:9px}
+    .settings-list .setting{padding:13px 0;border-bottom:1px solid var(--line)}.settings-list .setting:last-child{border:0}.version{font-size:12px;color:var(--muted);text-align:center;margin-top:10px}
+    @media(max-width:390px){.grid2{grid-template-columns:1fr}.filters{grid-template-columns:1fr}.filters .wide{grid-column:auto}}
+  </style>
+</head>
+<body>
+  <div id="languageGate" class="language-gate">
+    <div class="language-panel">
+      <div class="crest">S</div>
+      <h2>Гильдия SARE</h2>
+      <p>Где задания становятся приключением.</p>
+      <button class="btn primary" data-lang="ru">Русский</button>
+      <button class="btn secondary" data-lang="kk">Қазақша</button>
+      <button class="btn ghost" data-lang="en">English</button>
+    </div>
+  </div>
+
+  <div class="app">
+    <header><h1 data-i18n="appName">Гильдия SARE</h1><p data-i18n="tagline">Где задания становятся приключением.</p></header>
+    <main>
+      <section id="board" class="screen active">
+        <h2 data-i18n="board">Доска квестов</h2>
+        <div class="tabs">
+          <button class="tab active" data-board-view="all" data-i18n="allQuests">Все квесты</button>
+          <button class="tab" data-board-view="mine" data-i18n="myQuests">Мои квесты</button>
+        </div>
+        <div class="filters" id="filters">
+          <input class="wide" id="search" data-i18n-placeholder="search" placeholder="Поиск квестов">
+          <select id="city"><option value="" data-i18n="allCities">Все города</option><option>Алматы</option><option>Астана</option><option>Шымкент</option></select>
+          <select id="category"><option value="" data-i18n="allCategories">Все категории</option><option value="help" data-i18n="catHelp">Помощь</option><option value="delivery" data-i18n="catDelivery">Доставка</option><option value="events" data-i18n="catEvents">События</option><option value="digital" data-i18n="catDigital">Онлайн</option></select>
+          <select id="reward"><option value="" data-i18n="anyReward">Любая награда</option><option value="10000">от 10 000 ₸</option><option value="25000">от 25 000 ₸</option><option value="50000">от 50 000 ₸</option></select>
+        </div>
+        <div id="questList"></div>
+      </section>
+
+      <section id="create" class="screen">
+        <h2 data-i18n="createQuest">Создать квест</h2>
+        <form id="questForm" class="card">
+          <div class="field"><label data-i18n="title">Название</label><input name="title" required maxlength="80"></div>
+          <div class="field"><label data-i18n="description">Описание</label><textarea name="description" required maxlength="1000"></textarea></div>
+          <div class="grid2">
+            <div class="field"><label data-i18n="category">Категория</label><select name="category" required><option value="help" data-i18n="catHelp">Помощь</option><option value="delivery" data-i18n="catDelivery">Доставка</option><option value="events" data-i18n="catEvents">События</option><option value="digital" data-i18n="catDigital">Онлайн</option></select></div>
+            <div class="field"><label data-i18n="city">Город</label><select name="city" required><option>Алматы</option><option>Астана</option><option>Шымкент</option></select></div>
+          </div>
+          <div class="field"><label data-i18n="location">Местоположение</label><input name="location" required maxlength="120" placeholder="Район или адрес"></div>
+          <div class="grid2">
+            <div class="field"><label data-i18n="rewardLabel">Награда, ₸</label><input name="reward" type="number" min="0" step="500" required></div>
+            <div class="field"><label data-i18n="deadline">Срок выполнения</label><input name="deadline" type="date" required></div>
+          </div>
+          <div class="field"><label data-i18n="photo">Фото (необязательно)</label><input name="photo" type="file" accept="image/*"></div>
+          <button class="btn primary full" type="submit" data-i18n="publish">Опубликовать квест</button>
+        </form>
+      </section>
+
+      <section id="chats" class="screen">
+        <h2 data-i18n="chats">Чаты</h2>
+        <div id="chatTabs" class="chat-tabs"></div>
+        <div id="chatLog" class="chat-log"></div>
+        <form id="chatForm" class="row"><input id="chatInput" required maxlength="500" data-i18n-placeholder="message" placeholder="Сообщение"><button class="btn primary" type="submit" data-i18n="send">Отправить</button></form>
+      </section>
+
+      <section id="profile" class="screen">
+        <h2 data-i18n="profile">Карточка авантюриста</h2>
+        <div class="card">
+          <div class="row"><div class="avatar">A</div><div><h3 style="margin:0">Аян Сарсен</h3><div class="muted" data-i18n="memberAlpha">Участник alpha-тестирования</div><div style="color:var(--gold);margin-top:5px">★ 4.8</div></div></div>
+          <div class="row" style="margin-top:15px"><div class="stat"><strong id="createdStat">0</strong><span data-i18n="created">Создано</span></div><div class="stat"><strong id="takenStat">0</strong><span data-i18n="taken">Взято</span></div><div class="stat"><strong>12</strong><span data-i18n="reviews">Отзывы</span></div></div>
+        </div>
+        <div class="card"><h3 data-i18n="recentReview">Последний отзыв</h3><p>«Всё выполнено вовремя, отличная связь.»</p><div class="muted">— Мария, Алматы</div></div>
+        <div class="card settings-list"><h3 data-i18n="settings">Настройки</h3><div class="setting between row"><span data-i18n="language">Язык</span><button id="changeLanguage" class="btn secondary" data-i18n="change">Изменить</button></div><div class="setting"><button id="checkUpdates" class="btn primary full" data-i18n="checkUpdates">Проверить обновления</button></div><div id="appVersion" class="version">Версия 0.1.0</div></div>
+      </section>
+    </main>
+
+    <nav class="bottom">
+      <button class="active" data-screen="board"><span>☷</span><b data-i18n="navBoard">Доска</b></button>
+      <button data-screen="create"><span>＋</span><b data-i18n="navCreate">Создать</b></button>
+      <button data-screen="chats"><span>◌</span><b data-i18n="navChats">Чаты</b></button>
+      <button data-screen="profile"><span>♙</span><b data-i18n="navProfile">Профиль</b></button>
+    </nav>
+  </div>
+
+  <script>
+    const I18N={
+      ru:{appName:'Гильдия SARE',tagline:'Где задания становятся приключением.',board:'Доска квестов',allQuests:'Все квесты',myQuests:'Мои квесты',search:'Поиск квестов',allCities:'Все города',allCategories:'Все категории',anyReward:'Любая награда',catHelp:'Помощь',catDelivery:'Доставка',catEvents:'События',catDigital:'Онлайн',createQuest:'Создать квест',title:'Название',description:'Описание',category:'Категория',city:'Город',location:'Местоположение',rewardLabel:'Награда, ₸',deadline:'Срок выполнения',photo:'Фото (необязательно)',publish:'Опубликовать квест',chats:'Чаты',message:'Сообщение',send:'Отправить',profile:'Карточка авантюриста',memberAlpha:'Участник alpha-тестирования',created:'Создано',taken:'Взято',reviews:'Отзывы',recentReview:'Последний отзыв',settings:'Настройки',language:'Язык',change:'Изменить',checkUpdates:'Проверить обновления',navBoard:'Доска',navCreate:'Создать',navChats:'Чаты',navProfile:'Профиль',accept:'Принять квест',accepted:'Квест принят',createdByYou:'Создан вами',empty:'Квесты не найдены',generalHall:'Зал гильдии',questChat:'Квест',statusOpen:'Открыт',statusTaken:'В работе',published:'Квест опубликован'},
+      kk:{appName:'SARE Гильдиясы',tagline:'Тапсырмалар шытырманға айналатын жер.',board:'Квесттер тақтасы',allQuests:'Барлық квест',myQuests:'Менің квесттерім',search:'Квест іздеу',allCities:'Барлық қала',allCategories:'Барлық санат',anyReward:'Кез келген сыйақы',catHelp:'Көмек',catDelivery:'Жеткізу',catEvents:'Іс-шаралар',catDigital:'Онлайн',createQuest:'Квест құру',title:'Атауы',description:'Сипаттамасы',category:'Санат',city:'Қала',location:'Орналасқан жері',rewardLabel:'Сыйақы, ₸',deadline:'Орындау мерзімі',photo:'Фото (міндетті емес)',publish:'Квестті жариялау',chats:'Чаттар',message:'Хабарлама',send:'Жіберу',profile:'Авантюрист картасы',memberAlpha:'Alpha-тест қатысушысы',created:'Құрылды',taken:'Алынды',reviews:'Пікірлер',recentReview:'Соңғы пікір',settings:'Баптаулар',language:'Тіл',change:'Өзгерту',checkUpdates:'Жаңартуды тексеру',navBoard:'Тақта',navCreate:'Құру',navChats:'Чаттар',navProfile:'Профиль',accept:'Квестті алу',accepted:'Квест алынды',createdByYou:'Сіз құрдыңыз',empty:'Квест табылмады',generalHall:'Гильдия залы',questChat:'Квест',statusOpen:'Ашық',statusTaken:'Орындалуда',published:'Квест жарияланды'},
+      en:{appName:'SARE Guild',tagline:'Where tasks become adventures.',board:'Quest Board',allQuests:'All quests',myQuests:'My quests',search:'Search quests',allCities:'All cities',allCategories:'All categories',anyReward:'Any reward',catHelp:'Help',catDelivery:'Delivery',catEvents:'Events',catDigital:'Online',createQuest:'Create quest',title:'Title',description:'Description',category:'Category',city:'City',location:'Location',rewardLabel:'Reward, ₸',deadline:'Deadline',photo:'Photo (optional)',publish:'Publish quest',chats:'Chats',message:'Message',send:'Send',profile:'Adventurer Card',memberAlpha:'Alpha test member',created:'Created',taken:'Taken',reviews:'Reviews',recentReview:'Latest review',settings:'Settings',language:'Language',change:'Change',checkUpdates:'Check for updates',navBoard:'Board',navCreate:'Create',navChats:'Chats',navProfile:'Profile',accept:'Accept quest',accepted:'Quest accepted',createdByYou:'Created by you',empty:'No quests found',generalHall:'Guild Hall',questChat:'Quest',statusOpen:'Open',statusTaken:'In progress',published:'Quest published'}
+    };
+    const defaults=[
+      {id:'q1',title:'Помочь перевезти книги',description:'Нужно перенести 8 коробок книг из машины в библиотеку.',category:'help',city:'Алматы',location:'Бостандыкский район',reward:12000,deadline:'2026-09-05',owner:'other'},
+      {id:'q2',title:'Доставить документы',description:'Забрать конверт в центре и доставить в офис до 18:00.',category:'delivery',city:'Астана',location:'Левый берег',reward:18000,deadline:'2026-09-02',owner:'other'},
+      {id:'q3',title:'Фотографии для афиши',description:'Сделать 10 аккуратных фотографий площадки для локального события.',category:'events',city:'Шымкент',location:'Парк Абая',reward:30000,deadline:'2026-09-10',owner:'other'}
+    ];
+    const read=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key))??fallback}catch(e){return fallback}};
+    const write=(key,value)=>localStorage.setItem(key,JSON.stringify(value));
+    let lang=localStorage.getItem('sare_lang')||'ru';
+    let quests=read('sare_quests',defaults); let taken=read('sare_taken',[]); let boardView='all'; let activeChat='general';
+    const tr=(key)=>I18N[lang][key]||I18N.ru[key]||key;
+    const esc=(value)=>String(value??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+    const categoryName=(key)=>tr('cat'+key.charAt(0).toUpperCase()+key.slice(1));
+    function applyLanguage(){document.documentElement.lang=lang;document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=tr(el.dataset.i18n));document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>el.placeholder=tr(el.dataset.i18nPlaceholder));renderQuests();renderChats();}
+    function chooseLanguage(value){lang=value;localStorage.setItem('sare_lang',lang);document.getElementById('languageGate').classList.add('hidden');applyLanguage()}
+    document.querySelectorAll('[data-lang]').forEach(b=>b.addEventListener('click',()=>chooseLanguage(b.dataset.lang)));
+    if(localStorage.getItem('sare_lang'))document.getElementById('languageGate').classList.add('hidden');
+    document.getElementById('changeLanguage').addEventListener('click',()=>document.getElementById('languageGate').classList.remove('hidden'));
+    document.querySelectorAll('nav.bottom button').forEach(button=>button.addEventListener('click',()=>showScreen(button.dataset.screen)));
+    function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));document.querySelectorAll('nav.bottom button').forEach(b=>b.classList.toggle('active',b.dataset.screen===id));if(id==='profile')renderStats();if(id==='chats')renderChats();window.scrollTo(0,0)}
+    document.querySelectorAll('[data-board-view]').forEach(button=>button.addEventListener('click',()=>{boardView=button.dataset.boardView;document.querySelectorAll('[data-board-view]').forEach(b=>b.classList.toggle('active',b===button));document.getElementById('filters').style.display=boardView==='all'?'grid':'none';renderQuests()}));
+    ['search','city','category','reward'].forEach(id=>document.getElementById(id).addEventListener(id==='search'?'input':'change',renderQuests));
+    function renderQuests(){
+      const search=document.getElementById('search').value.toLowerCase(); const city=document.getElementById('city').value; const category=document.getElementById('category').value; const minReward=Number(document.getElementById('reward').value||0);
+      let list=quests.filter(q=>boardView==='mine'?(q.owner==='me'||taken.includes(q.id)):true).filter(q=>(q.title+' '+q.description).toLowerCase().includes(search)&&(!city||q.city===city)&&(!category||q.category===category)&&q.reward>=minReward);
+      const host=document.getElementById('questList'); if(!list.length){host.innerHTML='<div class="card empty">'+esc(tr('empty'))+'</div>';return}
+      host.innerHTML=list.map(q=>{const isTaken=taken.includes(q.id);const mine=q.owner==='me';return `<article class="card quest"><div class="row between"><h3>${esc(q.title)}</h3><span class="reward">${Number(q.reward).toLocaleString()} ₸</span></div><div class="meta"><span class="pill">${esc(q.city)}</span><span class="pill">${esc(categoryName(q.category))}</span><span class="pill">${esc(q.deadline)}</span></div><p>${esc(q.description)}</p><div class="muted">${esc(q.location)}</div><div style="margin-top:12px">${mine?`<button class="btn secondary" disabled>${esc(tr('createdByYou'))}</button>`:isTaken?`<button class="btn secondary" disabled>${esc(tr('accepted'))}</button>`:`<button class="btn primary accept" data-id="${esc(q.id)}">${esc(tr('accept'))}</button>`}</div></article>`}).join('');
+      host.querySelectorAll('.accept').forEach(button=>button.addEventListener('click',()=>acceptQuest(button.dataset.id)));
+    }
+    function acceptQuest(id){if(!taken.includes(id)){taken.push(id);write('sare_taken',taken)}renderQuests();renderChats();renderStats()}
+    document.getElementById('questForm').addEventListener('submit',event=>{event.preventDefault();const f=new FormData(event.currentTarget);quests.unshift({id:'q'+Date.now(),title:f.get('title'),description:f.get('description'),category:f.get('category'),city:f.get('city'),location:f.get('location'),reward:Number(f.get('reward')),deadline:f.get('deadline'),owner:'me',photo:f.get('photo')?.name||''});write('sare_quests',quests);event.currentTarget.reset();boardView='mine';document.querySelectorAll('[data-board-view]').forEach(b=>b.classList.toggle('active',b.dataset.boardView==='mine'));document.getElementById('filters').style.display='none';showScreen('board');renderQuests();alert(tr('published'))});
+    function chatKey(){return activeChat==='general'?'sare_chat_general':'sare_chat_'+activeChat}
+    function renderChats(){const available=quests.filter(q=>taken.includes(q.id));if(activeChat!=='general'&&!available.some(q=>q.id===activeChat))activeChat='general';const tabs=document.getElementById('chatTabs');tabs.innerHTML=`<button class="tab ${activeChat==='general'?'active':''}" data-chat="general">${esc(tr('generalHall'))}</button>`+available.map(q=>`<button class="tab ${activeChat===q.id?'active':''}" data-chat="${esc(q.id)}">${esc(q.title)}</button>`).join('');tabs.querySelectorAll('[data-chat]').forEach(b=>b.addEventListener('click',()=>{activeChat=b.dataset.chat;renderChats()}));const seed=activeChat==='general'?[{name:'Мастер гильдии',text:'Добро пожаловать в Зал гильдии!',time:'12:00'}]:[{name:'Система',text:'Чат квеста открыт. Обсудите детали безопасно и вежливо.',time:'12:01'}];const messages=read(chatKey(),seed);document.getElementById('chatLog').innerHTML=messages.map(m=>`<div class="msg ${m.me?'me':''}">${esc(m.text)}<small>${esc(m.name)} · ${esc(m.time)}</small></div>`).join('');document.getElementById('chatLog').scrollTop=99999}
+    document.getElementById('chatForm').addEventListener('submit',event=>{event.preventDefault();const input=document.getElementById('chatInput');const messages=read(chatKey(),[]);messages.push({name:'Вы',text:input.value,time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),me:true});write(chatKey(),messages);input.value='';renderChats()});
+    function renderStats(){document.getElementById('createdStat').textContent=quests.filter(q=>q.owner==='me').length;document.getElementById('takenStat').textContent=taken.length}
+    document.getElementById('checkUpdates').addEventListener('click',()=>{if(window.SareAndroid&&SareAndroid.checkForUpdates){SareAndroid.checkForUpdates()}else{alert('Проверка обновлений доступна в Android-приложении.')}});
+    try{if(window.SareAndroid&&SareAndroid.getAppVersion)document.getElementById('appVersion').textContent='Версия '+SareAndroid.getAppVersion()}catch(e){}
+    applyLanguage();renderStats();
+  </script>
+</body>
+</html>
+

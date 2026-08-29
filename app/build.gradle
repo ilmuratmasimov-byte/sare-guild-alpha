@@ -1,0 +1,55 @@
+plugins {
+    id 'com.android.application'
+}
+
+def versionProps = new Properties()
+file('../version.properties').withInputStream { versionProps.load(it) }
+
+def keystorePath = System.getenv('SARE_KEYSTORE_PATH')
+def keystorePassword = System.getenv('SARE_KEYSTORE_PASSWORD')
+def keyAliasValue = System.getenv('SARE_KEY_ALIAS')
+def keyPasswordValue = System.getenv('SARE_KEY_PASSWORD')
+def hasReleaseSigning = keystorePath && keystorePassword && keyAliasValue && keyPasswordValue
+
+android {
+    namespace 'kz.sare.guild'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'kz.sare.guild'
+        minSdk 26
+        targetSdk 35
+        versionCode versionProps['VERSION_CODE'].toInteger()
+        versionName versionProps['VERSION_NAME']
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    if (hasReleaseSigning) {
+        signingConfigs {
+            release {
+                storeFile file(keystorePath)
+                storePassword keystorePassword
+                keyAlias keyAliasValue
+                keyPassword keyPasswordValue
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
