@@ -45,11 +45,13 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.SARE_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.SARE_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.SARE_KEY_PASSWORD }}
+          FIREBASE_API_KEY: ${{ secrets.SARE_FIREBASE_API_KEY }}
         run: |
           test -n "$KEYSTORE_BASE64" || { echo "Missing SARE_KEYSTORE_BASE64"; exit 1; }
           test -n "$KEYSTORE_PASSWORD" || { echo "Missing SARE_KEYSTORE_PASSWORD"; exit 1; }
           test -n "$KEY_ALIAS" || { echo "Missing SARE_KEY_ALIAS"; exit 1; }
           test -n "$KEY_PASSWORD" || { echo "Missing SARE_KEY_PASSWORD"; exit 1; }
+          test -n "$FIREBASE_API_KEY" || { echo "Missing SARE_FIREBASE_API_KEY"; exit 1; }
 
       - name: Restore signing keystore
         env:
@@ -73,6 +75,7 @@ jobs:
           SARE_KEYSTORE_PASSWORD: ${{ secrets.SARE_KEYSTORE_PASSWORD }}
           SARE_KEY_ALIAS: ${{ secrets.SARE_KEY_ALIAS }}
           SARE_KEY_PASSWORD: ${{ secrets.SARE_KEY_PASSWORD }}
+          SARE_FIREBASE_API_KEY: ${{ secrets.SARE_FIREBASE_API_KEY }}
         run: gradle --no-daemon :app:assembleRelease
 
       - name: Verify and prepare artifacts

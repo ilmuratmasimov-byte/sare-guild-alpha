@@ -10,6 +10,7 @@ def keystorePassword = System.getenv('SARE_KEYSTORE_PASSWORD')
 def keyAliasValue = System.getenv('SARE_KEY_ALIAS')
 def keyPasswordValue = System.getenv('SARE_KEY_PASSWORD')
 def hasReleaseSigning = keystorePath && keystorePassword && keyAliasValue && keyPasswordValue
+def firebaseApiKey = System.getenv('SARE_FIREBASE_API_KEY') ?: ''
 
 android {
     namespace 'kz.sare.guild'
@@ -21,6 +22,7 @@ android {
         targetSdk 35
         versionCode versionProps['VERSION_CODE'].toInteger()
         versionName versionProps['VERSION_NAME']
+        buildConfigField 'String', 'FIREBASE_API_KEY', '"' + firebaseApiKey.replace('\\', '\\\\').replace('"', '\\"') + '"'
     }
 
     buildFeatures {

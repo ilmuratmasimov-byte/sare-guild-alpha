@@ -28,6 +28,7 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -40,11 +41,13 @@ public class MainActivity extends Activity {
     private static final String PREFS = "sare_updates";
     private static final String PENDING_DOWNLOAD_ID = "pending_download_id";
     private static final int FILE_CHOOSER_REQUEST = 4301;
+    private static final String AUTH_PREFS = "sare_auth";
 
     private WebView webView;
     private ValueCallback<Uri[]> fileChooserCallback;
     private DownloadManager downloadManager;
     private SharedPreferences preferences;
+    private SharedPreferences authPreferences;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     private final BroadcastReceiver downloadReceiver = new BroadcastReceiver() {
@@ -66,6 +69,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         downloadManager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
         preferences = getSharedPreferences(PREFS, MODE_PRIVATE);
+        authPreferences = getSharedPreferences(AUTH_PREFS, MODE_PRIVATE);
 
         webView = new WebView(this);
         configureWebView();
@@ -106,7 +110,7 @@ public class MainActivity extends Activity {
                 } catch (Exception error) {
                     fileChooserCallback = null;
                     Toast.makeText(MainActivity.this,
-                            "Не удалось открыть выбор файла", Toast.LENGTH_SHORT).show();
+                            "�� 㤠���� ������ �롮� 䠩��", Toast.LENGTH_SHORT).show();
                     return false;
                 }
             }
@@ -154,7 +158,7 @@ public class MainActivity extends Activity {
 
     private void checkForUpdates() {
         runOnUiThread(() -> Toast.makeText(this,
-                "Проверяем обновления…", Toast.LENGTH_SHORT).show());
+                "�஢��塞 ����������:", Toast.LENGTH_SHORT).show());
         executor.execute(() -> {
             HttpURLConnection connection = null;
             try {
@@ -166,7 +170,7 @@ public class MainActivity extends Activity {
 
                 int status = connection.getResponseCode();
                 if (status < 200 || status >= 300) {
-                    throw new IllegalStateException("Сервер обновлений ответил кодом " + status);
+                    throw new IllegalStateException("��ࢥ� ���������� �⢥⨫ ����� " + status);
                 }
 
                 JSONObject payload = new JSONObject(readFully(connection.getInputStream()));
@@ -175,21 +179,21 @@ public class MainActivity extends Activity {
                 String apkUrl = payload.getString("apkUrl");
 
                 if (remoteVersionCode <= BuildConfig.VERSION_CODE) {
-                    runOnUiThread(() -> showMessage("Обновления",
-                            "Установлена актуальная версия " + BuildConfig.VERSION_NAME + "."));
+                    runOnUiThread(() -> showMessage("����������",
+                            "��⠭������ ���㠫쭠� ����� " + BuildConfig.VERSION_NAME + "."));
                     return;
                 }
 
                 runOnUiThread(() -> new AlertDialog.Builder(this)
-                        .setTitle("Доступна версия " + remoteVersionName)
-                        .setMessage("Скачать обновление? Android отдельно попросит подтвердить установку.")
-                        .setNegativeButton("Позже", null)
-                        .setPositiveButton("Скачать", (dialog, which) ->
+                        .setTitle("����㯭� ����� " + remoteVersionName)
+                        .setMessage("������ ����������? Android �⤥�쭮 ������ ���⢥न�� ��⠭����.")
+                        .setNegativeButton("�����", null)
+                        .setPositiveButton("������", (dialog, which) ->
                                 downloadApk(apkUrl, remoteVersionName))
                         .show());
             } catch (Exception error) {
-                runOnUiThread(() -> showMessage("Не удалось проверить обновления",
-                        error.getMessage() == null ? "Проверьте интернет-соединение." : error.getMessage()));
+                runOnUiThread(() -> showMessage("�� 㤠���� �஢���� ����������",
+                        error.getMessage() == null ? "�஢���� ���୥�-ᮥ�������." : error.getMessage()));
             } finally {
                 if (connection != null) {
                     connection.disconnect();
@@ -210,18 +214,144 @@ public class MainActivity extends Activity {
         return result.toString();
     }
 
+    private void authenticate(String action, String email, String password, String displayName) {
+        if (BuildConfig.FIREBASE_API_KEY.isEmpty()) {
+            sendAuthResult(false, action, "���ਧ��� Firebase ��� �� ����஥�� ��� �⮩ ᡮન.", null);
+            return;
+        }
+        executor.execute(() -> {
+            HttpURLConnection connection = null;
+            try {
+                String endpoint = "register".equals(action) ? "accounts:signUp" : "accounts:signInWithPassword";
+                URL url = new URL("https://identitytoolkit.googleapis.com/v1/" + endpoint
+                        + "?key=" + BuildConfig.FIREBASE_API_KEY);
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("POST");
+                connection.setConnectTimeout(15000);
+                connection.setReadTimeout(15000);
+                connection.setDoOutput(true);
+                connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+
+                JSONObject request = new JSONObject()
+                        .put("email", email.trim())
+                        .put("password", password)
+                        .put("returnSecureToken", true);
+                try (OutputStream output = connection.getOutputStream()) {
+                    output.write(request.toString().getBytes(StandardCharsets.UTF_8));
+                }
+
+                int status = connection.getResponseCode();
+                InputStream stream = status >= 200 && status < 300
+                        ? connection.getInputStream() : connection.getErrorStream();
+                JSONObject response = new JSONObject(readFully(stream));
+                if (status < 200 || status >= 300) {
+                    throw new IllegalStateException(firebaseErrorMessage(response));
+                }
+
+                String resolvedName = displayName == null ? "" : displayName.trim();
+                if (resolvedName.isEmpty()) {
+                    resolvedName = authPreferences.getString("display_name", "���������");
+                }
+                authPreferences.edit()
+                        .putString("email", response.optString("email", email.trim()))
+                        .putString("display_name", resolvedName)
+                        .putString("local_id", response.optString("localId"))
+                        .putString("id_token", response.optString("idToken"))
+                        .putString("refresh_token", response.optString("refreshToken"))
+                        .apply();
+                sendAuthResult(true, action, "", currentUserJson());
+            } catch (Exception error) {
+                sendAuthResult(false, action,
+                        error.getMessage() == null ? "�� 㤠���� �易���� � Firebase." : error.getMessage(), null);
+            } finally {
+                if (connection != null) connection.disconnect();
+            }
+        });
+    }
+
+    private void sendPasswordReset(String email) {
+        if (BuildConfig.FIREBASE_API_KEY.isEmpty()) {
+            sendAuthResult(false, "reset", "���ਧ��� Firebase ��� �� ����஥�� ��� �⮩ ᡮન.", null);
+            return;
+        }
+        executor.execute(() -> {
+            HttpURLConnection connection = null;
+            try {
+                URL url = new URL("https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key="
+                        + BuildConfig.FIREBASE_API_KEY);
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("POST");
+                connection.setConnectTimeout(15000);
+                connection.setReadTimeout(15000);
+                connection.setDoOutput(true);
+                connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+                JSONObject request = new JSONObject().put("requestType", "PASSWORD_RESET")
+                        .put("email", email.trim());
+                try (OutputStream output = connection.getOutputStream()) {
+                    output.write(request.toString().getBytes(StandardCharsets.UTF_8));
+                }
+                int status = connection.getResponseCode();
+                InputStream stream = status >= 200 && status < 300
+                        ? connection.getInputStream() : connection.getErrorStream();
+                JSONObject response = new JSONObject(readFully(stream));
+                if (status < 200 || status >= 300) {
+                    throw new IllegalStateException(firebaseErrorMessage(response));
+                }
+                sendAuthResult(true, "reset", "���쬮 ��� ����⠭������� ��ࠢ����.", null);
+            } catch (Exception error) {
+                sendAuthResult(false, "reset",
+                        error.getMessage() == null ? "�� 㤠���� ��ࠢ��� ���쬮." : error.getMessage(), null);
+            } finally {
+                if (connection != null) connection.disconnect();
+            }
+        });
+    }
+
+    private String firebaseErrorMessage(JSONObject response) {
+        String code = response.optJSONObject("error") == null ? "" :
+                response.optJSONObject("error").optString("message");
+        if (code.startsWith("EMAIL_EXISTS")) return "��� email 㦥 ��ॣ����஢��.";
+        if (code.startsWith("INVALID_LOGIN_CREDENTIALS") || code.startsWith("INVALID_PASSWORD"))
+            return "������ email ��� ��஫�.";
+        if (code.startsWith("EMAIL_NOT_FOUND")) return "���짮��⥫� � ⠪�� email �� ������.";
+        if (code.startsWith("WEAK_PASSWORD")) return "��஫� ������ ᮤ�ঠ�� �� ����� 6 ᨬ�����.";
+        if (code.startsWith("INVALID_EMAIL")) return "������ ���४�� email.";
+        if (code.startsWith("TOO_MANY_ATTEMPTS")) return "���誮� ����� ����⮪. ���஡�� �����.";
+        if (code.startsWith("OPERATION_NOT_ALLOWED")) return "�室 �� email ��� �� ������ � Firebase.";
+        return code.isEmpty() ? "�訡�� Firebase." : code;
+    }
+
+    private JSONObject currentUserJson() throws Exception {
+        String email = authPreferences.getString("email", "");
+        if (email.isEmpty()) return null;
+        return new JSONObject()
+                .put("email", email)
+                .put("displayName", authPreferences.getString("display_name", "���������"))
+                .put("localId", authPreferences.getString("local_id", ""));
+    }
+
+    private void sendAuthResult(boolean ok, String action, String message, JSONObject user) {
+        try {
+            JSONObject payload = new JSONObject().put("ok", ok).put("action", action).put("message", message);
+            if (user != null) payload.put("user", user);
+            String script = "window.SareAuth&&window.SareAuth.receive(" + payload + ")";
+            runOnUiThread(() -> webView.evaluateJavascript(script, null));
+        } catch (Exception ignored) {
+        }
+    }
+
     private void downloadApk(String apkUrl, String versionName) {
         Uri uri = Uri.parse(apkUrl);
         if (!"https".equalsIgnoreCase(uri.getScheme()) ||
                 !"github.com".equalsIgnoreCase(uri.getHost())) {
-            showMessage("Ошибка обновления", "Получен недопустимый адрес APK.");
+            showMessage("�訡�� ����������", "����祭 �������⨬� ���� APK.");
             return;
         }
 
         String fileName = "SARE-Guild-" + versionName.replaceAll("[^0-9A-Za-z._-]", "_") + ".apk";
         DownloadManager.Request request = new DownloadManager.Request(uri)
-                .setTitle("Гильдия SARE " + versionName)
-                .setDescription("Загрузка обновления")
+                .setTitle("���줨� SARE " + versionName)
+                .setDescription("����㧪� ����������")
                 .setMimeType("application/vnd.android.package-archive")
                 .setNotificationVisibility(
                         DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
@@ -229,7 +359,7 @@ public class MainActivity extends Activity {
 
         long downloadId = downloadManager.enqueue(request);
         preferences.edit().putLong(PENDING_DOWNLOAD_ID, downloadId).apply();
-        Toast.makeText(this, "Обновление загружается", Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "���������� ����㦠����", Toast.LENGTH_LONG).show();
     }
 
     private boolean canInstallPackages() {
@@ -244,8 +374,8 @@ public class MainActivity extends Activity {
         }
 
         if (!canInstallPackages()) {
-            showMessage("Разрешите установку обновлений",
-                    "Включите «Установка неизвестных приложений» для SARE и вернитесь в приложение.");
+            showMessage("������ ��⠭���� ����������",
+                    "������ <��⠭���� ���������� �ਫ������> ��� SARE � ��୨��� � �ਫ������.");
             Intent settingsIntent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
                     Uri.parse("package:" + getPackageName()));
             startActivity(settingsIntent);
@@ -277,6 +407,37 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public String getAppVersion() {
             return BuildConfig.VERSION_NAME;
+        }
+
+        @JavascriptInterface
+        public String getAuthState() {
+            try {
+                JSONObject user = currentUserJson();
+                return new JSONObject().put("authenticated", user != null).put("user", user).toString();
+            } catch (Exception error) {
+                return "{\"authenticated\":false}";
+            }
+        }
+
+        @JavascriptInterface
+        public void signIn(String email, String password) {
+            authenticate("login", email, password, null);
+        }
+
+        @JavascriptInterface
+        public void register(String name, String email, String password) {
+            authenticate("register", email, password, name);
+        }
+
+        @JavascriptInterface
+        public void resetPassword(String email) {
+            sendPasswordReset(email);
+        }
+
+        @JavascriptInterface
+        public void signOut() {
+            authPreferences.edit().clear().apply();
+            sendAuthResult(true, "logout", "", null);
         }
     }
 }
