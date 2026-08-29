@@ -1,10 +1,10 @@
-# ���줨� SARE - Android alpha
+# Гильдия SARE — Android alpha
 
-<��� ������� �⠭������ �ਪ��祭���.>
+«Где задания становятся приключением.»
 
-���⮩ Android alpha-���⨯ ��� ���஢���� �।� ��㧥�. �ਫ������ ����ᠭ� �� Java � �����뢠�� HTML/JS-����䥩� �१ WebView. ��������� � �室 ࠡ���� �१ Firebase Authentication; ��⮢� ������ � ᮮ�饭�� ���� �࠭���� ⮫쪮 �� ���ன�⢥ � `localStorage`.
+Простой Android alpha-прототип для тестирования среди друзей. Приложение написано на Java и показывает HTML/JS-интерфейс через WebView. Регистрация и вход работают через Firebase Authentication; тестовые квесты и сообщения пока хранятся только на устройстве в `localStorage`.
 
-## ��ࠬ����
+## Параметры
 
 - package: `kz.sare.guild`
 - minSdk: 26
@@ -12,16 +12,16 @@
 - Java: 17
 - Gradle: 8.9
 - Android Gradle Plugin: 8.7.3
-- ��砫쭠� �����: `1` / `0.1.0`
+- начальная версия: `1` / `0.1.0`
 
-## ���ઠ
+## Сборка
 
-GitHub Actions ᮡ�ࠥ� �����ᠭ�� release APK �� push � `main`, ��筮� ����᪥ � ᮧ����� ⥣� ���� `v0.1.0`. �� ����᪥ �� ⥣� workflow ⠪�� �㡫���� GitHub Release � 䠩����:
+GitHub Actions собирает подписанный release APK при push в `main`, ручном запуске и создании тега вида `v0.1.0`. При запуске по тегу workflow также публикует GitHub Release с файлами:
 
 - `SARE-Guild.apk`
 - `version.json`
 
-��� ������ �㦭� repository secrets:
+Для подписи нужны repository secrets:
 
 - `SARE_KEYSTORE_BASE64`
 - `SARE_KEYSTORE_PASSWORD`
@@ -29,19 +29,18 @@ GitHub Actions ᮡ�ࠥ� �����ᠭ�� release APK �� push �
 - `SARE_KEY_PASSWORD`
 - `SARE_FIREBASE_API_KEY`
 
-Keystore � ��஫� ����� ��������� � Git. ����� ������ ⮫쪮 � `version.properties`; ��� ������� ���������� `VERSION_CODE` ������ 㢥��稢�����.
+Keystore и пароли нельзя добавлять в Git. Версию меняют только в `version.properties`; для каждого обновления `VERSION_CODE` должен увеличиваться.
 
-## ���ਧ���
+## Авторизация
 
-Firebase-�஥��: `sare-guild-alpha-kz`. ������ �室 �� email � ��஫�. �ਫ������ �����ন���� ॣ������, �室, ����⠭������� ��஫�, ��࠭���� ��ᨨ � ��室. ������᪨� Firebase API-���� ��।����� � ᡮ�� �१ secret `SARE_FIREBASE_API_KEY` � �� �࠭���� � ��室�����.
+Firebase-проект: `sare-guild-alpha-kz`. Включён вход по email и паролю. Приложение поддерживает регистрацию, вход, восстановление пароля, сохранение сессии и выход. Клиентский Firebase API-ключ передаётся в сборку через secret `SARE_FIREBASE_API_KEY` и не хранится в исходниках.
 
-## ���������� ��� Google Play
+## Обновления без Google Play
 
-������ **��䨫�  ����ன��  �஢���� ����������** ����砥� �㡫��� 䠩�:
+Кнопка **Профиль → Настройки → Проверить обновления** получает публичный файл:
 
 `https://github.com/ilmuratmasimov-byte/sare-guild-alpha/releases/latest/download/version.json`
 
-�᫨ `versionCode` ��� ��⠭���������, �ਫ������ �।������ ᪠��� APK. ��᫥ ����㧪� Android ���뢠�� �⠭���⭮� ��⥬��� ���⢥ত���� ��⠭����. ������ ��⠭���� �� �ᯮ������.
+Если `versionCode` выше установленного, приложение предлагает скачать APK. После загрузки Android открывает стандартное системное подтверждение установки. Скрытая установка не используется.
 
-�⮡� ���������� ��⠭������� ������ ⥪�饩 ���ᨨ, package name � signing key ������ ��⠢����� ��������묨, � `VERSION_CODE` - 㢥��稢�����.
-
+Чтобы обновление установилось поверх текущей версии, package name и signing key должны оставаться неизменными, а `VERSION_CODE` — увеличиваться.
