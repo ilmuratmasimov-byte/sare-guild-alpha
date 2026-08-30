@@ -22,6 +22,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
+import android.view.WindowInsets;
 
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -74,6 +75,10 @@ public class MainActivity extends Activity {
         authPreferences = getSharedPreferences(AUTH_PREFS, MODE_PRIVATE);
 
         webView = new WebView(this);
+        webView.setOnApplyWindowInsetsListener((view, insets) -> {
+            view.setPadding(0, insets.getSystemWindowInsetTop(), 0, 0);
+            return insets;
+        });
         configureWebView();
         setContentView(webView);
         webView.loadUrl("file:///android_asset/index.html");
