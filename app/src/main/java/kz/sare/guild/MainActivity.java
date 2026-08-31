@@ -84,6 +84,7 @@ public class MainActivity extends Activity {
         configureWebView();
         setContentView(webView);
         webView.loadUrl("file:///android_asset/index.html");
+        webView.postDelayed(() -> checkForUpdates(true), 3000L);
 
         IntentFilter filter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -166,8 +167,14 @@ public class MainActivity extends Activity {
     }
 
     private void checkForUpdates() {
-        runOnUiThread(() -> Toast.makeText(this,
-                "Проверяем обновления…", Toast.LENGTH_SHORT).show());
+        checkForUpdates(false);
+    }
+
+    private void checkForUpdates(boolean silentWhenNothingChanged) {
+        if (!silentWhenNothingChanged) {
+            runOnUiThread(() -> Toast.makeText(this,
+                    "Проверяем обновления…", Toast.LENGTH_SHORT).show());
+        }
         executor.execute(() -> {
             HttpURLConnection connection = null;
             try {
@@ -192,8 +199,10 @@ public class MainActivity extends Activity {
                 String apkUrl = payload.getString("apkUrl");
 
                 if (remoteVersionCode <= BuildConfig.VERSION_CODE) {
-                    runOnUiThread(() -> showMessage("Обновления",
-                            "Установлена актуальная версия " + BuildConfig.VERSION_NAME + "."));
+                    if (!silentWhenNothingChanged) {
+                        runOnUiThread(() -> showMessage("Обновления",
+                                "Установлена актуальная версия " + BuildConfig.VERSION_NAME + "."));
+                    }
                     return;
                 }
 
@@ -205,8 +214,10 @@ public class MainActivity extends Activity {
                                 downloadApk(apkUrl, remoteVersionName))
                         .show());
             } catch (Exception error) {
-                runOnUiThread(() -> showMessage("Не удалось проверить обновления",
-                        error.getMessage() == null ? "Проверьте интернет-соединение." : error.getMessage()));
+                if (!silentWhenNothingChanged) {
+                    runOnUiThread(() -> showMessage("Не удалось проверить обновления",
+                            error.getMessage() == null ? "Проверьте интернет-соединение." : error.getMessage()));
+                }
             } finally {
                 if (connection != null) {
                     connection.disconnect();
