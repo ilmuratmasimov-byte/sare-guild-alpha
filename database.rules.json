@@ -9,11 +9,24 @@
         ".validate": "newData.val() === true"
       }
     },
+    "bans": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)",
+        ".write": "auth != null && root.child('admins').child(auth.uid).val() === true && auth.uid !== $uid",
+        ".validate": "!newData.exists() || newData.hasChildren(['userId', 'reason', 'createdAt', 'createdBy'])",
+        "userId": { ".validate": "newData.val() === $uid" },
+        "reason": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 300" },
+        "createdAt": { ".validate": "newData.isNumber()" },
+        "createdBy": { ".validate": "newData.val() === auth.uid" },
+        "$other": { ".validate": false }
+      }
+    },
     "users": {
       ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
       "$uid": {
         ".read": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)",
-        ".write": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)",
+        ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || (auth.uid === $uid && !root.child('bans').child(auth.uid).exists()))",
         ".validate": "!newData.exists() || newData.hasChildren(['email', 'displayName', 'updatedAt'])",
         "email": { ".validate": "newData.isString() && newData.val().length <= 254" },
         "displayName": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 60" },
@@ -24,7 +37,7 @@
     "quests": {
       ".read": "auth != null",
       "$questId": {
-        ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || (!data.exists() && newData.child('ownerId').val() === auth.uid) || (data.child('ownerId').val() === auth.uid && (!newData.exists() || newData.child('ownerId').val() === auth.uid)))",
+        ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || (!root.child('bans').child(auth.uid).exists() && ((!data.exists() && newData.child('ownerId').val() === auth.uid) || (data.child('ownerId').val() === auth.uid && (!newData.exists() || newData.child('ownerId').val() === auth.uid)))))",
         ".validate": "!newData.exists() || newData.hasChildren(['title', 'description', 'category', 'city', 'location', 'reward', 'deadline', 'ownerId', 'ownerName', 'createdAt', 'updatedAt'])",
         "title": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 80" },
         "description": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 1000" },
@@ -44,7 +57,7 @@
     "questStatus": {
       ".read": "auth != null",
       "$questId": {
-        ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || root.child('quests').child($questId).child('ownerId').val() === auth.uid || root.child('assignments').child($questId).child(auth.uid).exists())",
+        ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || (!root.child('bans').child(auth.uid).exists() && (root.child('quests').child($questId).child('ownerId').val() === auth.uid || root.child('assignments').child($questId).child(auth.uid).exists())))",
         ".validate": "!newData.exists() || newData.hasChildren(['state', 'updatedAt', 'updatedBy'])",
         "state": { ".validate": "(newData.val() === 'open' || newData.val() === 'taken' || newData.val() === 'review' || newData.val() === 'completed') && (newData.val() !== 'completed' || root.child('admins').child(auth.uid).val() === true || root.child('quests').child($questId).child('ownerId').val() === auth.uid) && (newData.val() !== 'review' || root.child('assignments').child($questId).child(auth.uid).exists())" },
         "updatedAt": { ".validate": "newData.isNumber()" },
@@ -55,9 +68,9 @@
     "assignments": {
       ".read": "auth != null",
       "$questId": {
-        ".write": "auth != null && !newData.exists() && (root.child('admins').child(auth.uid).val() === true || root.child('quests').child($questId).child('ownerId').val() === auth.uid)",
+        ".write": "auth != null && !newData.exists() && (root.child('admins').child(auth.uid).val() === true || (!root.child('bans').child(auth.uid).exists() && root.child('quests').child($questId).child('ownerId').val() === auth.uid))",
         "$uid": {
-          ".write": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)",
+          ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || (auth.uid === $uid && !root.child('bans').child(auth.uid).exists()))",
           ".validate": "!newData.exists() || newData.hasChildren(['userName', 'email', 'acceptedAt'])",
           "userName": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 60" },
           "email": { ".validate": "newData.isString() && newData.val().length <= 254" },
@@ -71,7 +84,7 @@
       "$questId": {
         "$uid": {
           ".read": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)",
-          ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || (auth.uid === $uid && !data.exists() && newData.child('reporterId').val() === auth.uid && newData.child('questId').val() === $questId))",
+          ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || (auth.uid === $uid && !root.child('bans').child(auth.uid).exists() && !data.exists() && newData.child('reporterId').val() === auth.uid && newData.child('questId').val() === $questId))",
           ".validate": "!newData.exists() || newData.hasChildren(['questId', 'questTitle', 'questOwnerId', 'reporterId', 'reporterName', 'reason', 'details', 'status', 'createdAt', 'updatedAt'])",
           "questId": { ".validate": "newData.val() === $questId" },
           "questTitle": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 80" },
@@ -93,7 +106,7 @@
         "messages": {
           ".read": "auth != null",
           "$messageId": {
-            ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || (!data.exists() && newData.child('senderId').val() === auth.uid) || data.child('senderId').val() === auth.uid)",
+            ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || (!root.child('bans').child(auth.uid).exists() && ((!data.exists() && newData.child('senderId').val() === auth.uid) || data.child('senderId').val() === auth.uid)))",
             ".validate": "!newData.exists() || newData.hasChildren(['senderId', 'senderName', 'text', 'createdAt', 'time'])",
             "senderId": { ".validate": "newData.val() === auth.uid" },
             "senderName": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 60" },
@@ -107,10 +120,10 @@
       "quests": {
         "$questId": {
           ".read": "auth != null && (root.child('admins').child(auth.uid).val() === true || root.child('quests').child($questId).child('ownerId').val() === auth.uid || root.child('assignments').child($questId).child(auth.uid).exists())",
-          ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || root.child('quests').child($questId).child('ownerId').val() === auth.uid)",
+          ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || (!root.child('bans').child(auth.uid).exists() && root.child('quests').child($questId).child('ownerId').val() === auth.uid))",
           "messages": {
             "$messageId": {
-              ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || (newData.child('senderId').val() === auth.uid && (!data.exists() || data.child('senderId').val() === auth.uid) && (root.child('quests').child($questId).child('ownerId').val() === auth.uid || root.child('assignments').child($questId).child(auth.uid).exists())))",
+              ".write": "auth != null && (root.child('admins').child(auth.uid).val() === true || (!root.child('bans').child(auth.uid).exists() && newData.child('senderId').val() === auth.uid && (!data.exists() || data.child('senderId').val() === auth.uid) && (root.child('quests').child($questId).child('ownerId').val() === auth.uid || root.child('assignments').child($questId).child(auth.uid).exists())))",
               ".validate": "!newData.exists() || newData.hasChildren(['senderId', 'senderName', 'text', 'createdAt', 'time'])",
               "senderId": { ".validate": "newData.val() === auth.uid" },
               "senderName": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 60" },
