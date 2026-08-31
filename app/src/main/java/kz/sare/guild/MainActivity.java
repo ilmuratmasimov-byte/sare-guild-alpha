@@ -4,6 +4,10 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.DownloadManager;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -43,7 +47,9 @@ public class MainActivity extends Activity {
     private static final String PREFS = "sare_updates";
     private static final String PENDING_DOWNLOAD_ID = "pending_download_id";
     private static final int FILE_CHOOSER_REQUEST = 4301;
+    private static final int NOTIFICATION_PERMISSION_REQUEST = 4302;
     private static final String AUTH_PREFS = "sare_auth";
+    private static final String CHAT_CHANNEL_ID = "sare_guild_chat";
 
     private WebView webView;
     private ValueCallback<Uri[]> fileChooserCallback;
@@ -72,6 +78,7 @@ public class MainActivity extends Activity {
         downloadManager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
         preferences = getSharedPreferences(PREFS, MODE_PRIVATE);
         authPreferences = getSharedPreferences(AUTH_PREFS, MODE_PRIVATE);
+        createChatNotificationChannel();
 
         webView = new WebView(this);
         configureWebView();
@@ -538,6 +545,48 @@ public class MainActivity extends Activity {
                 .show();
     }
 
+    private void createChatNotificationChannel() {
+        NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        NotificationChannel channel = new NotificationChannel(
+                CHAT_CHANNEL_ID,
+                "Сообщения Гильдии",
+                NotificationManager.IMPORTANCE_DEFAULT);
+        channel.setDescription("Новые сообщения в чатах SARE Guild");
+        manager.createNotificationChannel(channel);
+    }
+
+    private void requestChatNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                    NOTIFICATION_PERMISSION_REQUEST);
+        }
+    }
+
+    private void showChatNotification(String title, String message, String chatId) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        Intent openIntent = new Intent(this, MainActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                this,
+                Math.abs((chatId == null ? "general" : chatId).hashCode()),
+                openIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        Notification notification = new Notification.Builder(this, CHAT_CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.ic_dialog_email)
+                .setContentTitle(title == null ? "SARE Guild" : title)
+                .setContentText(message == null ? "Новое сообщение" : message)
+                .setStyle(new Notification.BigTextStyle().bigText(message))
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true)
+                .build();
+        NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        manager.notify(6000 + Math.abs((chatId == null ? "general" : chatId).hashCode() % 1000), notification);
+    }
+
     public final class SareBridge {
         @JavascriptInterface
         public void checkForUpdates() {
@@ -592,6 +641,16 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public void cloudRequest(String requestId, String method, String path, String jsonBody) {
             MainActivity.this.cloudRequest(requestId, method, path, jsonBody);
+        }
+
+        @JavascriptInterface
+        public void requestNotificationPermission() {
+            runOnUiThread(MainActivity.this::requestChatNotificationPermission);
+        }
+
+        @JavascriptInterface
+        public void showChatNotification(String title, String message, String chatId) {
+            runOnUiThread(() -> MainActivity.this.showChatNotification(title, message, chatId));
         }
 
         @JavascriptInterface
